@@ -1,0 +1,63 @@
+version: "3.8"
+
+# 简化版 APISIX Docker Compose 配置
+# 使用官方镜像 + 配置文件挂载 + 插件二进制挂载
+# 优点：简单、灵活、易维护
+
+services:
+  # APISIX 网关（使用官方镜像，无需自定义构建）
+  apisix:
+    image: apache/apisix:3.14.1-debian
+    restart: always
+    volumes:
+      # 配置文件挂载（修改后重启容器即可生效）
+      - ./apisix_conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+      # 插件二进制挂载（构建一次，挂载使用）
+      # 注意：需要先构建插件，路径根据实际情况调整
+      - ../../apisix-devshare-plugin-runner/bin/go-runner:/usr/local/bin/go-runner:ro
+    ports:
+      - "9080:9080"   # HTTP 端口
+      - "9443:9443"   # HTTPS 端口
+      - "9180:9180"   # Admin API 端口
+      - "9091:9091"   # Prometheus 端口
+      - "9092:9092"   # Control API 端口
+    depends_on:
+      - etcd
+    networks:
+      - apisix-network
+    environment:
+      - APISIX_STAND_ALONE=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9080/apisix/admin/routes", "-H", "X-API-KEY: edd1c9f034335f136f87ad84b625c8f1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # etcd 配置中心
+  etcd:
+    image: bitnamilegacy/etcd:3.5.11
+    restart: always
+    volumes:
+      - etcd_data:/bitnami/etcd
+    environment:
+      ETCD_ENABLE_V2: "true"
+      ALLOW_NONE_AUTHENTICATION: "yes"
+      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd:2379"
+      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
+    ports:
+      - "2379:2379"
+    networks:
+      - apisix-network
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  apisix-network:
+    driver: bridge
+
+volumes:
+  etcd_data:
+    driver: local

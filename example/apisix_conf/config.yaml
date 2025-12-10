@@ -31,11 +31,11 @@ deployment:
 
     admin_key:
       - name: "admin"
-        key: edd1c9f034335f136f87ad84b625c8f1
+        key: xinyuan_tech_apisix_admin_key_2025_secure  # 请修改为更安全的 key
         role: admin                 # admin: manage all configuration data
 
       - name: "viewer"
-        key: 4054f7cf07e344346cd3f287985e76a2
+        key: xinyuan_tech_apisix_viewer_key_2025_secure  # 请修改为更安全的 key
         role: viewer
 
   etcd:
@@ -49,3 +49,8 @@ plugin_attr:
     export_addr:
       ip: "0.0.0.0"
       port: 9091
+
+# 外部插件配置（Go Plugin Runner）
+# 使用简化部署方案：插件二进制挂载到 /usr/local/bin/go-runner
+ext-plugin:
+  cmd: ["/usr/local/bin/go-runner", "run"]

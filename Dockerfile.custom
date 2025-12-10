@@ -1,0 +1,36 @@
+# 自定义 APISIX 镜像
+# 包含自定义配置和 Go Plugin Runner
+
+FROM apache/apisix:3.14.1-debian AS base
+
+# 复制自定义配置文件
+COPY example/apisix_conf/config.yaml /usr/local/apisix/conf/config.yaml
+
+# 构建 Go Plugin Runner
+FROM golang:1.21-alpine AS plugin-builder
+WORKDIR /build
+# 注意：需要将 apisix-devshare-plugin-runner 复制到构建上下文
+# 或者使用多阶段构建从另一个镜像复制
+COPY ../apisix-devshare-plugin-runner/ ./apisix-devshare-plugin-runner/
+WORKDIR /build/apisix-devshare-plugin-runner
+RUN go mod download && \
+    go build -o /usr/local/bin/go-runner ./cmd/go-runner
+
+# 最终镜像
+FROM apache/apisix:3.14.1-debian
+
+# 复制自定义配置
+COPY --from=base /usr/local/apisix/conf/config.yaml /usr/local/apisix/conf/config.yaml
+
+# 复制 Go Plugin Runner
+COPY --from=plugin-builder /usr/local/bin/go-runner /usr/local/bin/go-runner
+RUN chmod +x /usr/local/bin/go-runner
+
+# 验证配置
+RUN apisix test
+
+# 暴露端口
+EXPOSE 9080 9443 9180 9091 9092
+
+# 启动命令
+CMD ["sh", "-c", "/usr/bin/apisix init && /usr/bin/apisix init_etcd && /usr/local/openresty/bin/openresty -p /usr/local/apisix -g 'daemon off;'"]
