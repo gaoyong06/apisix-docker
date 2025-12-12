@@ -51,6 +51,8 @@ plugin_attr:
       port: 9091
 
 # 外部插件配置（Go Plugin Runner）
-# 使用简化部署方案：插件二进制挂载到 /usr/local/bin/go-runner
 ext-plugin:
-  cmd: ["/usr/local/bin/go-runner", "run"]
+  # Go Plugin Runner 命令路径
+  # 注意：插件二进制文件通过 docker-compose.dev.yml 挂载到容器中
+  # bin 目录挂载到 /usr/local/bin/go-runner，所以实际路径是 /usr/local/bin/go-runner/go-runner
+  cmd: ["/usr/local/bin/go-runner/go-runner", "run"]
