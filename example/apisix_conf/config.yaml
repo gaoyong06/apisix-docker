@@ -54,5 +54,5 @@ plugin_attr:
 ext-plugin:
   # Go Plugin Runner 命令路径
   # 注意：插件二进制文件通过 docker-compose.dev.yml 挂载到容器中
-  # bin 目录挂载到 /usr/local/bin/go-runner，所以实际路径是 /usr/local/bin/go-runner/go-runner
-  cmd: ["/usr/local/bin/go-runner/go-runner", "run"]
+  # bin/go-runner 文件挂载到 /usr/local/bin/go-runner，所以实际路径是 /usr/local/bin/go-runner
+  cmd: ["/usr/local/bin/go-runner", "run"]
