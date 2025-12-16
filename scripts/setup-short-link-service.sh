@@ -186,6 +186,144 @@ EOF
     fi
 }
 
+# 创建短链接分组路由（需要匹配 /v1/short-link-groups）
+create_groups_route() {
+    local route_id="short-link-groups"
+    log_info "创建分组路由: ${route_id}..."
+    
+    local route_config=$(cat <<EOF
+{
+  "id": "${route_id}",
+  "name": "short-link-groups",
+  "uri": "/v1/short-link-groups*",
+  "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+  "upstream_id": "short-link-service",
+  "plugins": {
+    "ext-plugin-pre-req": {
+      "conf": [
+        {
+          "name": "app-id",
+          "value": "{\"validate_app_id\":true,\"cache_ttl\":300}",
+          "_meta": {
+            "priority": 1050
+          }
+        },
+        {
+          "name": "api-key",
+          "value": "{\"address\":\"host.docker.internal:9106\",\"public_routes\":[]}",
+          "_meta": {
+            "priority": 1000
+          }
+        },
+        {
+          "name": "billing",
+          "value": "{\"address\":\"host.docker.internal:9107\",\"service_name\":\"short-link\",\"public_routes\":[]}",
+          "_meta": {
+            "priority": 900
+          }
+        }
+      ]
+    },
+    "cors": {
+      "allow_origins": "*",
+      "allow_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+      "allow_headers": ["*"],
+      "expose_headers": ["*"],
+      "max_age": 3600
+    }
+  }
+}
+EOF
+)
+
+    local response=$(curl -s -w "\n%{http_code}" \
+        -X PUT "${APISIX_ADMIN_URL}/apisix/admin/routes/${route_id}" \
+        -H "X-API-KEY: ${APISIX_ADMIN_KEY}" \
+        -H "Content-Type: application/json" \
+        -d "${route_config}")
+    
+    local http_code=$(echo "${response}" | tail -n1)
+    local body=$(echo "${response}" | sed '$d')
+    
+    if [ "${http_code}" = "200" ] || [ "${http_code}" = "201" ]; then
+        log_info "分组路由创建成功: ${route_id}"
+        echo "${body}" | jq -r '.value.uri' 2>/dev/null || echo ""
+    else
+        log_error "分组路由创建失败: HTTP ${http_code}"
+        echo "${body}" | jq -r '.error_msg // .message // .' 2>/dev/null || echo "${body}"
+        exit 1
+    fi
+}
+
+# 创建短链接列表路由（需要匹配 /v1/short-links）
+create_links_route() {
+    local route_id="short-link-links"
+    log_info "创建列表路由: ${route_id}..."
+    
+    local route_config=$(cat <<EOF
+{
+  "id": "${route_id}",
+  "name": "short-link-links",
+  "uri": "/v1/short-links*",
+  "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+  "upstream_id": "short-link-service",
+  "plugins": {
+    "ext-plugin-pre-req": {
+      "conf": [
+        {
+          "name": "app-id",
+          "value": "{\"validate_app_id\":true,\"cache_ttl\":300}",
+          "_meta": {
+            "priority": 1050
+          }
+        },
+        {
+          "name": "api-key",
+          "value": "{\"address\":\"host.docker.internal:9106\",\"public_routes\":[]}",
+          "_meta": {
+            "priority": 1000
+          }
+        },
+        {
+          "name": "billing",
+          "value": "{\"address\":\"host.docker.internal:9107\",\"service_name\":\"short-link\",\"public_routes\":[]}",
+          "_meta": {
+            "priority": 900
+          }
+        }
+      ]
+    },
+    "cors": {
+      "allow_origins": "*",
+      "allow_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+      "allow_headers": ["*"],
+      "expose_headers": ["*"],
+      "max_age": 3600
+    }
+  }
+}
+EOF
+)
+
+    local response=$(curl -s -w "\n%{http_code}" \
+        -X PUT "${APISIX_ADMIN_URL}/apisix/admin/routes/${route_id}" \
+        -H "X-API-KEY: ${APISIX_ADMIN_KEY}" \
+        -H "Content-Type: application/json" \
+        -d "${route_config}")
+    
+    local http_code=$(echo "${response}" | tail -n1)
+    local body=$(echo "${response}" | sed '$d')
+    
+    if [ "${http_code}" = "200" ] || [ "${http_code}" = "201" ]; then
+        log_info "列表路由创建成功: ${route_id}"
+        echo "${body}" | jq -r '.value.uri' 2>/dev/null || echo ""
+    else
+        log_error "列表路由创建失败: HTTP ${http_code}"
+        echo "${body}" | jq -r '.error_msg // .message // .' 2>/dev/null || echo "${body}"
+        exit 1
+    fi
+}
+
 # 创建短链接跳转路由（不需要认证）
 create_redirect_route() {
     local route_id="short-link-redirect"
@@ -259,6 +397,30 @@ verify_config() {
         log_warn "✗ 路由配置验证失败"
     fi
     
+    # 检查分组路由
+    local groups_response=$(curl -s -w "\n%{http_code}" \
+        "${APISIX_ADMIN_URL}/apisix/admin/routes/short-link-groups" \
+        -H "X-API-KEY: ${APISIX_ADMIN_KEY}")
+    local groups_http_code=$(echo "${groups_response}" | tail -n1)
+    
+    if [ "${groups_http_code}" = "200" ]; then
+        log_info "✓ 分组路由配置验证成功"
+    else
+        log_warn "✗ 分组路由配置验证失败"
+    fi
+    
+    # 检查列表路由
+    local links_response=$(curl -s -w "\n%{http_code}" \
+        "${APISIX_ADMIN_URL}/apisix/admin/routes/short-link-links" \
+        -H "X-API-KEY: ${APISIX_ADMIN_KEY}")
+    local links_http_code=$(echo "${links_response}" | tail -n1)
+    
+    if [ "${links_http_code}" = "200" ]; then
+        log_info "✓ 列表路由配置验证成功"
+    else
+        log_warn "✗ 列表路由配置验证失败"
+    fi
+    
     # 检查跳转路由
     local redirect_response=$(curl -s -w "\n%{http_code}" \
         "${APISIX_ADMIN_URL}/apisix/admin/routes/short-link-redirect" \
@@ -281,6 +443,8 @@ main() {
     check_apisix
     create_upstream
     create_route
+    create_groups_route
+    create_links_route
     create_redirect_route
     verify_config
     
@@ -288,6 +452,8 @@ main() {
     log_info ""
     log_info "路由信息："
     log_info "  - API 路由: /v1/short-link* (需要认证)"
+    log_info "  - 分组路由: /v1/short-link-groups* (需要认证)"
+    log_info "  - 列表路由: /v1/short-links* (需要认证)"
     log_info "  - 跳转路由: /s/* (无需认证)"
     log_info "  - 上游服务: ${SHORT_LINK_SERVICE_HOST}:${SHORT_LINK_SERVICE_PORT}"
     log_info ""
