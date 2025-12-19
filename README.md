@@ -1,3 +1,72 @@
+## APISIX 插件开发与更新
+
+### 不同场景的操作指南
+
+根据修改内容的不同，操作步骤也不同：
+
+| 修改内容 | 是否需要 `make build` | 是否需要重启 APISIX | 操作步骤 |
+|---------|---------------------|-------------------|---------|
+| **插件代码**（如 `plugins/api-key.go`） | ✅ 是 | ✅ 是 | 见下方"修改插件代码" |
+| **插件配置文件**（`configs/config.yaml`） | ❌ 否 | ✅ 是 | 见下方"修改插件配置" |
+| **APISIX 配置**（`apisix_conf/config.yaml`） | ❌ 否 | ✅ 是 | 见下方"修改 APISIX 配置" |
+
+### 修改插件代码
+
+当修改了插件源代码（如 `apisix-devshare-plugin-runner/plugins/*.go`）时：
+
+```bash
+# 1. 重新构建插件二进制
+cd /Users/gaoyong/Documents/work/xinyuan_tech/apisix-devshare-plugin-runner
+make build
+
+# 2. 重启 APISIX 容器（加载新的插件二进制）
+cd /Users/gaoyong/Documents/work/xinyuan_tech/apisix-docker/example
+docker-compose -f docker-compose.dev.yml restart apisix
+```
+
+**说明**：插件二进制通过 Docker volume 挂载到容器中，重新构建后需要重启容器才能加载新版本。
+
+### 修改插件配置
+
+当仅修改了插件配置文件（`apisix-devshare-plugin-runner/configs/config.yaml`）时：
+
+```bash
+# 直接重启 APISIX 容器即可（配置文件通过 volume 挂载，无需重新构建）
+cd /Users/gaoyong/Documents/work/xinyuan_tech/apisix-docker/example
+docker-compose -f docker-compose.dev.yml restart apisix
+```
+
+**说明**：插件配置文件通过 Docker volume 挂载，修改后重启容器即可生效，无需重新构建插件。
+
+### 修改 APISIX 配置
+
+当仅修改了 APISIX 配置文件（`apisix-docker/example/apisix_conf/config.yaml`）时：
+
+```bash
+# 直接重启 APISIX 容器即可（配置文件通过 volume 挂载）
+cd /Users/gaoyong/Documents/work/xinyuan_tech/apisix-docker/example
+docker-compose -f docker-compose.dev.yml restart apisix
+```
+
+**说明**：APISIX 配置文件通过 Docker volume 挂载，修改后重启容器即可生效。
+
+### 验证更新
+
+重启后，可以通过以下方式验证：
+
+```bash
+# 检查 APISIX 容器状态
+docker-compose -f docker-compose.dev.yml ps
+
+# 查看 APISIX 日志（确认插件已加载）
+docker-compose -f docker-compose.dev.yml logs apisix | grep -i "plugin\|api-key"
+
+# 测试 API 请求
+curl http://localhost:9080/v1/auth/login
+```
+
+---
+
 ## Roadmap
 
 Refer to [⚡️ Apache APISIX Projects Roadmap](https://github.com/apache/apisix/issues/12159)
