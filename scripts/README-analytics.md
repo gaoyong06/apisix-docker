@@ -39,8 +39,8 @@ export APISIX_ADMIN_KEY=edd1c9f034335f136f87ad84b625c8f1
 
 脚本会创建以下路由：
 
-1. **API 路由** (`/api/v1/analytics*`)
-   - 路径：`/api/v1/analytics*`
+1. **API 路由** (`/analytics/v1/*`)
+   - 路径：`/analytics/v1/*`
    - 方法：GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS
    - 认证：需要 API Key（通过 `api-key` 插件）
    - 计费：需要计费（通过 `billing` 插件）
@@ -60,33 +60,33 @@ export APISIX_ADMIN_KEY=edd1c9f034335f136f87ad84b625c8f1
 ## API 端点
 
 ### 事件追踪
-- `POST /api/v1/analytics/track` - 追踪事件
-- `POST /api/v1/analytics/track/batch` - 批量追踪事件
+- `POST /analytics/v1/track` - 追踪事件
+- `POST /analytics/v1/track/batch` - 批量追踪事件
 
 ### UTM 管理
-- `POST /api/v1/analytics/utm` - 创建 UTM 链接
-- `GET /api/v1/analytics/utm` - 获取 UTM 链接列表
+- `POST /analytics/v1/utm` - 创建 UTM 链接
+- `GET /analytics/v1/utm` - 获取 UTM 链接列表
 
 ### UTM 模板管理
-- `POST /api/v1/analytics/utm/templates` - 创建 UTM 模板
-- `PUT /api/v1/analytics/utm/templates/{template_id}` - 更新 UTM 模板
-- `DELETE /api/v1/analytics/utm/templates/{template_id}` - 删除 UTM 模板
-- `GET /api/v1/analytics/utm/templates` - 获取 UTM 模板列表
-- `GET /api/v1/analytics/utm/templates/{template_id}` - 获取 UTM 模板详情
+- `POST /analytics/v1/utm/templates` - 创建 UTM 模板
+- `PUT /analytics/v1/utm/templates/{template_id}` - 更新 UTM 模板
+- `DELETE /analytics/v1/utm/templates/{template_id}` - 删除 UTM 模板
+- `GET /analytics/v1/utm/templates` - 获取 UTM 模板列表
+- `GET /analytics/v1/utm/templates/{template_id}` - 获取 UTM 模板详情
 
 ### 数据分析
-- `GET /api/v1/analytics/overview` - 获取概览数据
-- `GET /api/v1/analytics/channels` - 获取渠道分析
-- `GET /api/v1/analytics/events` - 获取事件列表
-- `GET /api/v1/analytics/funnel` - 漏斗分析
-- `GET /api/v1/analytics/retention` - 留存分析
-- `GET /api/v1/analytics/users` - 用户分析
-- `GET /api/v1/analytics/users/path` - 用户路径分析
+- `GET /analytics/v1/overview` - 获取概览数据
+- `GET /analytics/v1/channels` - 获取渠道分析
+- `GET /analytics/v1/events` - 获取事件列表
+- `GET /analytics/v1/funnel` - 漏斗分析
+- `GET /analytics/v1/retention` - 留存分析
+- `GET /analytics/v1/users` - 用户分析
+- `GET /analytics/v1/users/path` - 用户路径分析
 
 ### Phase 3 功能
-- `GET /api/v1/analytics/recommendations` - 获取智能建议
-- `POST /api/v1/analytics/reports/generate` - 生成报表
-- `GET /api/v1/analytics/export` - 导出数据
+- `GET /analytics/v1/recommendations` - 获取智能建议
+- `POST /analytics/v1/reports/generate` - 生成报表
+- `GET /analytics/v1/export` - 导出数据
 
 ## 测试
 
@@ -112,21 +112,21 @@ export APP_ID=your-app-id
 #### 1. 获取概览数据
 
 ```bash
-curl -X GET "http://127.0.0.1:9080/api/v1/analytics/overview?appId=your-app-id&startDate=2025-01-01&endDate=2025-01-31" \
+curl -X GET "http://127.0.0.1:9080/analytics/v1/overview?appId=your-app-id&startDate=2025-01-01&endDate=2025-01-31" \
   -H "X-API-Key: your-api-key"
 ```
 
 #### 2. 获取渠道分析
 
 ```bash
-curl -X GET "http://127.0.0.1:9080/api/v1/analytics/channels?appId=your-app-id&startDate=2025-01-01&endDate=2025-01-31&attributionModel=last_click" \
+curl -X GET "http://127.0.0.1:9080/analytics/v1/channels?appId=your-app-id&startDate=2025-01-01&endDate=2025-01-31&attributionModel=last_click" \
   -H "X-API-Key: your-api-key"
 ```
 
 #### 3. 创建 UTM 链接
 
 ```bash
-curl -X POST "http://127.0.0.1:9080/api/v1/analytics/utm?appId=your-app-id" \
+curl -X POST "http://127.0.0.1:9080/analytics/v1/utm?appId=your-app-id" \
   -H "X-API-Key: your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -141,7 +141,7 @@ curl -X POST "http://127.0.0.1:9080/api/v1/analytics/utm?appId=your-app-id" \
 #### 4. 追踪事件
 
 ```bash
-curl -X POST "http://127.0.0.1:9080/api/v1/analytics/track?appId=your-app-id" \
+curl -X POST "http://127.0.0.1:9080/analytics/v1/track?appId=your-app-id" \
   -H "X-API-Key: your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
@@ -155,7 +155,7 @@ curl -X POST "http://127.0.0.1:9080/api/v1/analytics/track?appId=your-app-id" \
 #### 5. 获取智能建议
 
 ```bash
-curl -X GET "http://127.0.0.1:9080/api/v1/analytics/recommendations?appId=your-app-id&startDate=2025-01-01&endDate=2025-01-31" \
+curl -X GET "http://127.0.0.1:9080/analytics/v1/recommendations?appId=your-app-id&startDate=2025-01-01&endDate=2025-01-31" \
   -H "X-API-Key: your-api-key"
 ```
 

@@ -35,7 +35,7 @@ test_get_overview() {
     local end_date=$(date -u +%Y-%m-%d)
     
     local response=$(curl -s -w "\n%{http_code}" \
-        -X GET "${APISIX_GATEWAY_URL}/api/v1/analytics/overview?appId=${APP_ID}&startDate=${start_date}&endDate=${end_date}" \
+        -X GET "${APISIX_GATEWAY_URL}/analytics/v1/overview?appId=${APP_ID}&startDate=${start_date}&endDate=${end_date}" \
         -H "X-API-Key: ${API_KEY}")
     
     local http_code=$(echo "${response}" | tail -n1)
@@ -59,7 +59,7 @@ test_get_channels() {
     local end_date=$(date -u +%Y-%m-%d)
     
     local response=$(curl -s -w "\n%{http_code}" \
-        -X GET "${APISIX_GATEWAY_URL}/api/v1/analytics/channels?appId=${APP_ID}&startDate=${start_date}&endDate=${end_date}&attributionModel=last_click" \
+        -X GET "${APISIX_GATEWAY_URL}/analytics/v1/channels?appId=${APP_ID}&startDate=${start_date}&endDate=${end_date}&attributionModel=last_click" \
         -H "X-API-Key: ${API_KEY}")
     
     local http_code=$(echo "${response}" | tail -n1)
@@ -80,7 +80,7 @@ test_create_utm_link() {
     log_info "测试创建 UTM 链接..."
     
     local response=$(curl -s -w "\n%{http_code}" \
-        -X POST "${APISIX_GATEWAY_URL}/api/v1/analytics/utm?appId=${APP_ID}" \
+        -X POST "${APISIX_GATEWAY_URL}/analytics/v1/utm?appId=${APP_ID}" \
         -H "X-API-Key: ${API_KEY}" \
         -H "Content-Type: application/json" \
         -d '{
@@ -109,7 +109,7 @@ test_list_utm_links() {
     log_info "测试获取 UTM 链接列表..."
     
     local response=$(curl -s -w "\n%{http_code}" \
-        -X GET "${APISIX_GATEWAY_URL}/api/v1/analytics/utm?appId=${APP_ID}&page=1&pageSize=10" \
+        -X GET "${APISIX_GATEWAY_URL}/analytics/v1/utm?appId=${APP_ID}&page=1&pageSize=10" \
         -H "X-API-Key: ${API_KEY}")
     
     local http_code=$(echo "${response}" | tail -n1)
@@ -133,7 +133,7 @@ test_get_recommendations() {
     local end_date=$(date -u +%Y-%m-%d)
     
     local response=$(curl -s -w "\n%{http_code}" \
-        -X GET "${APISIX_GATEWAY_URL}/api/v1/analytics/recommendations?appId=${APP_ID}&startDate=${start_date}&endDate=${end_date}" \
+        -X GET "${APISIX_GATEWAY_URL}/analytics/v1/recommendations?appId=${APP_ID}&startDate=${start_date}&endDate=${end_date}" \
         -H "X-API-Key: ${API_KEY}")
     
     local http_code=$(echo "${response}" | tail -n1)
