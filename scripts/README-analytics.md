@@ -22,14 +22,23 @@ cd /Users/gaoyong/Documents/work/xinyuan_tech/apisix-docker
 
 ### 2. 环境变量配置（可选）
 
-如果 analytics-service 不在默认位置，可以设置环境变量：
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `APISIX_ADMIN_URL` | `http://127.0.0.1:9180` | APISIX Admin API 地址 |
+| `APISIX_ADMIN_KEY` | `edd1c9f034335f136f87ad84b625c8f1` | APISIX Admin Key |
+| `ANALYTICS_SERVICE_HOST` | `host.docker.internal` | 上游 host（Docker 环境用 host.docker.internal，Linux 直连用 127.0.0.1 或 容器名） |
+| `ANALYTICS_SERVICE_PORT` | `8110` | 上游 HTTP 端口 |
+| `API_KEY_SERVICE_ADDR` | `api-key-service:9106` | api-key-service gRPC 地址 |
+| `BILLING_SERVICE_ADDR` | `billing-service:9107` | billing-service gRPC 地址 |
+| `DEFAULT_APP_ID` | `00000000-0000-0000-0000-000000000001` | app-id 插件兜底 appId |
+| `ANALYTICS_ALLOWED_ORIGINS` | `https://web.homepagetab.com,...` | 浏览器 SDK 允许的 Origin 白名单；逗号分隔，不能使用 `*` |
+| `TRACK_LIMIT_RATE` / `TRACK_LIMIT_BURST` | `100` / `50` | 写入路由单 IP RPS / 突发额度 |
+| `QUERY_LIMIT_RATE` / `QUERY_LIMIT_BURST` | `20` / `10` | 查询路由单 IP RPS / 突发额度 |
 
 ```bash
-export ANALYTICS_SERVICE_HOST=127.0.0.1
-export ANALYTICS_SERVICE_PORT=8109
-export APISIX_ADMIN_URL=http://127.0.0.1:9180
-export APISIX_ADMIN_KEY=edd1c9f034335f136f87ad84b625c8f1
-
+ANALYTICS_SERVICE_HOST=127.0.0.1 \
+ANALYTICS_SERVICE_PORT=8110 \
+TRACK_LIMIT_RATE=200 \
 ./scripts/setup-analytics-service.sh
 ```
 
@@ -37,18 +46,24 @@ export APISIX_ADMIN_KEY=edd1c9f034335f136f87ad84b625c8f1
 
 ### 路由配置
 
-脚本会创建以下路由：
+脚本会创建 **2 条路由**（写入路径单独限流，避免 SDK 异常或滥用打爆 DB）：
 
-1. **API 路由** (`/analytics/v1/*`)
-   - 路径：`/analytics/v1/*`
-   - 方法：GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS
-   - 认证：需要 API Key（通过 `api-key` 插件）
-   - 计费：需要计费（通过 `billing` 插件）
-   - 插件：
-     - `app-id`：提取和验证 appId（优先级 1050）
-     - `api-key`：验证 API Key（优先级 1000）
-     - `billing`：扣减配额（优先级 900）
-     - `cors`：跨域支持
+1. **写入路由 `/analytics/v1/track*`**（POST/OPTIONS）
+   - 限流：单 IP **100 RPS**（burst 50），超出返回 429
+   - 通过 Service `analytics-service` 继承下面的插件链
+2. **查询路由 `/analytics/v1/*`**（GET/POST/PUT/DELETE/PATCH/HEAD/OPTIONS）
+   - 限流：单 IP **20 RPS**（burst 10）
+   - 通过 Service 继承同样的插件链
+
+两条路由都挂在同一个 Service `analytics-service` 上，Service 上的插件链：
+- `cors`：跨域支持
+- `ext-plugin-pre-req`：
+  - `app-id`：提取和验证 appId（优先级 1050）
+  - `api-key`：验证 API Key（优先级 1000，调用 `api-key-service`）
+  - `jwt-user`：解析 JWT 提取登录用户（优先级 950）
+  - `billing`：扣减配额（优先级 900，调用 `billing-service`）
+
+> 路径精度：`/analytics/v1/track*` 比 `/analytics/v1/*` 更精确，APISIX 会优先匹配；不需要手动设 `priority`。
 
 ### Upstream 配置
 
@@ -243,4 +258,3 @@ curl -X DELETE "http://127.0.0.1:9180/apisix/admin/upstreams/analytics-service" 
 - [APISIX 官方文档](https://apisix.apache.org/docs/)
 - [Analytics Service README](../../analytics-service/README.md)
 - [APISIX Plugin Runner README](../../apisix-devshare-plugin-runner/README.md)
-
